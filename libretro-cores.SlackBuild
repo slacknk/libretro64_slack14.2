@@ -1,0 +1,695 @@
+#!/bin/sh
+
+# Slackware build script for Libretro cores /for the Libretro API /for use with RetroArch.
+
+# Copyright 2019 NK
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+# Thx Slackware SBo Team 
+# https://git.slackbuilds.org/slackbuilds/log/games/RetroArch?h=14.2
+# https://git.slackbuilds.org/slackbuilds/log/games/snes9x-libretro?h=14.2
+# https://git.slackbuilds.org/slackbuilds/log/games/snes9x?h=14.2
+# https://git.slackbuilds.org/slackbuilds/log/games/nestopia?h=14.2
+#
+# and Arch Linux / AUR Team
+# https://www.archlinux.org/packages/?q=libretro
+# https://aur.archlinux.org/packages/?K=libretro
+
+
+# VERSIONs based on Libretro Stable by “Libretro” team
+# https://launchpad.net/~libretro
+# http://ppa.launchpad.net/libretro/stable/ubuntu/pool/main/
+
+
+PRGNAM=${LIBNAM}
+BUILD=${BUILD:-1}
+TAG=${TAG:-nk}
+
+if [ -z $PRGNAM ]; then
+ echo -e "\n\nLIBNAM=Libretro_core_NAME? ./maybe"
+ echo -e "> LIBNAM=libretro-beetle-psx"
+ echo -e "> LIBNAM=libretro-pcsx-rearmed"
+ echo -e "> LIBNAM=libretro-snes9x2005"
+ echo -e "> LIBNAM=libretro-nestopia-ue"
+ echo -e "> LIBNAM=libretro-fceu-mm"
+ echo -e "> LIBNAM=libretro-quicknes"
+ echo -e "> LIBNAM=libretro-genesisplus-gx"
+ echo -e "> LIBNAM=libretro-picodrive"
+ echo -e "> LIBNAM=libretro-gearsystem"
+ echo -e "> LIBNAM=libretro-gearboy"
+ echo -e; exit 1
+fi
+
+
+if [ -z "$ARCH" ]; then
+ case "$( uname -m )" in
+   i686) ARCH=i686 ;;
+   i486) ARCH=i486 ;;
+   i?86) ARCH=i586 ;;
+   arm*) ARCH=arm  ;;
+      *) ARCH=$( uname -m ) ;;
+ esac
+fi
+
+SLKCFLAGS="-O2"; LIBDIRSUFFIX=""
+
+if [ "$ARCH" = "x86_64" ]; then
+  SLKCFLAGS="-O2 -fPIC"
+  LIBDIRSUFFIX="64"
+elif [ "$ARCH" = "i?86" ]; then
+  SLKCFLAGS="-O2 -march=${ARCH} -mtune=i686"
+  LIBDIRSUFFIX=""
+fi
+
+
+[ -f "`pwd`/libretro-cores.SlackBuild" ] && CWD=$(pwd) || CWD=`dirname $0`
+TMP=${TMP:-/tmp/SBo/libretro/$PRGNAM} ; PKG=$TMP/_package-$PRGNAM
+rm -rf $PKG || sudo su -c "rm -rf $PKG" || /bin/su -c "rm -rf $PKG"
+mkdir -p $PKG 
+
+
+set -e
+cd $TMP
+
+
+if [[ $LIBNAM = all ]]; then
+ #echo -e "\n\nSorry, but to be continued..."
+ #exit 1
+
+ cd $CWD
+ for core in \
+  gearboy \
+  snes9x2005 snes9x \
+  beetle-psx pcsx-rearmed \
+  nestopia-ue fceu-mm quicknes \
+  genesisplus-gx picodrive gearsystem
+ do
+  LIBNAM=libretro-$core ./libretro-cores.SlackBuild
+ done
+
+ ls -l $OUTPUT
+ exit 0
+#
+#
+### PSP
+elif [[ $LIBNAM = libretro-ppsspp ]]; then
+ SRCGIT="https://github.com/hrydgard/ppsspp"
+ LIBNAM_="ppsspp_libretro"
+ GIT="https://github.com/libretro/ppsspp"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-ppsspp (Libretro core of PPSSPP)
+appname:
+appname: PPSSPP, a fast and portable PSP emulator written in C++.
+appname:
+appname:
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/ppsspp/
+appname:
+EOF
+#
+#
+### PS1
+elif [[ $LIBNAM = libretro-beetle-psx ]]; then
+ SRCGIT=""
+ LIBNAM_="mednafen_psx_libretro"
+ GIT=https://github.com/libretro/beetle-psx-libretro
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-beetle-psx (Libretro core of Mednafen PSX)
+appname:
+appname: Beetle PSX is a port/fork of Mednafen PSX module to the libretro API.
+appname: It can be compiled in C++98 mode. Beetle PSX HW excluding the Vulkan
+appname: renderer, which is written in C++11 \for the time being.
+appname:
+appname: Git-version Libretro:VERSION_libretro
+appname:
+appname: Homepage:
+appname:  https://docs.libretro.com/library/beetle_psx/
+appname:  https://docs.libretro.com/library/beetle_psx_hw/
+EOF
+#
+elif [[ $LIBNAM = libretro-pcsx-rearmed ]]; then
+ SRCGIT="https://github.com/notaz/pcsx_rearmed"
+ LIBNAM_="pcsx_rearmed_libretro"
+ GIT=https://github.com/libretro/pcsx_rearmed
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-pcsx-rearmed (Libretro core of PCSX ReARMed)
+appname:
+appname: PCSX ReARMed is a fork of PCSX Reloaded. It differs from the latter
+appname: in that it has special optimizations \for systems that have an ARM
+appname: architecture-based CPU.
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/pcsx_rearmed/
+appname: 
+EOF
+#
+#
+# NES / Famicom
+elif [[ $LIBNAM = libretro-fceu-mm ]]; then
+ SRCGIT=""
+ LIBNAM_="fceumm_libretro"
+ GIT="https://github.com/libretro/libretro-fceumm"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-fceumm (Libretro core of FCEU-mm)
+appname:
+appname: FCE Ultra mappers modified (FCEUmm) libretro port.
+appname:
+appname: FCEU "mappers modified" is an unofficial build of FCEU Ultra
+appname: by CaH4e3, which supports a lot of new mappers including some obscure
+appname: mappers such as one \for unlicensed NES ROM\'s.
+appname:
+appname: Git-version Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/fceumm/
+EOF
+#
+elif [[ $LIBNAM = libretro-nestopia-ue ]]; then
+ SRCGIT="https://github.com/0ldsk00l/nestopia"
+ LIBNAM_="nestopia_libretro"
+ GIT=https://github.com/libretro/nestopia
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-nestopia-ue (Libretro core of Nestopia Undead Edition)
+appname:
+appname: Nestopia, a portable and cycle-accurate NES/Famicom emulator written
+appname: in C++. Nestopia UE is a fork of the original source code, with
+appname: enhancements from members of the emulation community. This includes
+appname: support for new platforms, and bug fixes in the emulator core.
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/nestopia_ue/
+EOF
+#
+elif [[ $LIBNAM = libretro-quicknes ]]; then
+ SRCGIT="https://github.com/kode54/QuickNES_Core"
+ LIBNAM_="quicknes_libretro"
+ GIT="https://github.com/libretro/QuickNES_Core"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-quicknes (Libretro core of QuickNES_Core)
+appname:
+appname: The QuickNES core library, originally by Shay Green, heavily modified.
+appname: Nes_Emu, the core NES emulator library used by QuickNES, began as a
+appname: very simple NES emulator sometime in 2004. It was based on the 6502
+appname: CPU core and APU sound core used in the Game_Music_Emu sound engine.
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/quicknes/
+EOF
+#
+#
+### SNES / Super Famicom
+elif [[ $LIBNAM = libretro-snes9x2005 ]]; then
+ SRCGIT=""
+ LIBNAM_="snes9x2005_libretro"
+ GIT=https://github.com/libretro/snes9x2005
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-snes9x2005 (Libretro core of Snes9x 2005 / CATSFC (catSFC))
+appname:
+appname: Port of SNES9x 1.43 \for libretro. It was previously called CAT SFC.
+appname: Provides more favorable performance thresholds at the cost of
+appname: accuracy. A Super Nintendo emulator core using the libretro API.
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/snes9x_2005/
+appname: 
+EOF
+#
+elif [[ $LIBNAM = libretro-snes9x ]]; then
+ SRCGIT="https://github.com/snes9xgit/snes9x"
+ GIT="https://github.com/libretro/snes9x"
+ LIBNAM_="snes9x_libretro"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-snes9x (Libretro core of Snes9x)
+appname:
+appname: Port of upstream mainline up-to-date Snes9x, a portable SNES (TM)
+appname: emulator to libretro. The Snes9x core has been authored by Snes9x
+appname: Team < snes9x.com >. The Snes9x core is licensed under Non-commercial
+appname:  https://github.com/snes9xgit/snes9x/blob/master/LICENSE
+appname: 
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/snes9x/
+EOF
+#
+elif [[ $LIBNAM = libretro-bsnes-cplusplus98 ]]; then
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: bsnes-libretro-cplusplus98 (Libretro fork of bsnes v085)
+appname:
+appname: libretro implementation of the core emulation in BSNES,
+appname: a Super Nintendo (SNES) emulator.
+appname:
+appname: bsnes author: byuu | Porters: Ver Greeneyes, Themaister
+appname:
+appname: Homepage: http://byuu.org
+appname:
+appname: Code/Upstream repository:
+appname:  https://github.com/libretro/bsnes-libretro-cplusplus98
+EOF
+#
+#
+### GBA
+elif [[ $LIBNAM = libretro-mgba ]]; then
+ SRCGIT="https://github.com/mgba-emu/mgba"
+ LIBNAM_="mgba_libretro"
+ GIT=https://github.com/libretro/mgba
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-mgba (Libretro core of mGBA)
+appname:
+appname: mGBA is an emulator \for running Game Boy Advance games. It aims to
+appname: be faster and more accurate than many existing GBA emulators, as well
+appname: as adding features that other emulators lack.
+appname:  It also supports Game Boy and Game Boy Color games.
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/mgba/ 
+EOF
+#
+elif [[ $LIBNAM = libretro-gearboy ]]; then
+ SRCGIT="https://github.com/drhelius/Gearboy"
+ LIBNAM_="gearboy_libretro"
+ GIT="https://github.com/libretro/Gearboy"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-gearboy (Libretro core of Gearboy)
+appname:
+appname: Gearboy - Nintendo Game Boy Emulator. Gearboy is an open source,
+appname: Nintendo Game Boy (DMG) / Game Boy Color (CGB) emulator written in
+appname: C++. The Gearboy core is licensed under GPLv3
+appname:  < https://github.com/libretro/Gearboy/blob/master/LICENSE >
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/gearboy/
+EOF
+#
+elif [[ $LIBNAM = libretro-mesen ]]; then
+ SRCGIT=""
+ LIBNAM_="mesen_libretro"
+ GIT="https://github.com/SourMesen/Mesen"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-mesen (Libretro core of Mesen)
+appname:
+appname: Mesen is a high-accuracy NES/Famicom emulator built in C++ and C#.
+appname: The Mesen core has been authored by M. Bibaud (aka Sour) www.mesen.ca
+appname: The Mesen core is licensed under GPLv3
+appname:  < https://github.com/SourMesen/Mesen/blob/master/README.md >
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/mesen/
+EOF
+#
+#
+### SEGA
+elif [[ $LIBNAM = libretro-genesisplus-gx ]]; then
+ SRCGIT="https://github.com/ekeeke/Genesis-Plus-GX"
+ LIBNAM_="genesis_plus_gx_libretro"
+ GIT="https://github.com/libretro/Genesis-Plus-GX"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-genesisplus-gx (Libretro core of Genesis Plus GX)
+appname:
+appname: An enhanced port of Genesis Plus - accurate & portable Sega 8/16 bit
+appname: emulator. Genesis Plus GX has 100% compatibility with MD, CD, MS, GG,
+appname: SG-1000 & Pico released software, also emulating backwards
+appname: compatibility modes when available.
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/genesis_plus_gx/ 
+EOF
+#
+elif [[ $LIBNAM = libretro-picodrive ]]; then
+ SRCGIT="https://github.com/notaz/picodrive"
+ LIBNAM_="picodrive_libretro"
+ GIT="https://github.com/libretro/picodrive"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-picodrive (Libretro core of PicoDrive)
+appname:
+appname: Fast MegaDrive/MegaCD/32X emulator. This is yet another MD, CD, MS,
+appname: 32X emulator, which was written having ARM-based handheld devices in
+appname: mind, but also runs on non-ARM little-endian hardware too. PicoDrive
+appname: was the first emulator ever to properly emulate Virtua Racing and
+appname: it\'s SVP chip. The PicoDrive core is licensed under Non-commercial
+appname:  < https://github.com/libretro/picodrive/blob/master/COPYING >
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname: Homepage: https://docs.libretro.com/library/picodrive/
+EOF
+#
+elif [[ $LIBNAM = libretro-gearsystem ]]; then
+ SRCGIT=""
+ LIBNAM_="gearsystem_libretro"
+ GIT="https://github.com/drhelius/Gearsystem"
+ cat << EOF > $TMP/slack-desc
+       |-----handy-ruler------------------------------------------------------|
+appname: libretro-gearsystem (Libretro core of Gearsystem)
+appname:
+appname: Gearsystem is an open source, Sega Mark III, Master System,
+appname: Game Gear, Sega Game 1000 (SG-1000), Othello Multivision
+appname: emulator written in C++. The Gearsystem core is licensed under GPLv3
+appname:  < https://github.com/drhelius/Gearsystem/blob/master/LICENSE >
+appname:
+appname: Git-version_
+appname: * Libretro:VERSION_libretro
+appname:
+appname: Homepage: https://docs.libretro.com/library/gearsystem/
+EOF
+#
+fi
+
+
+git_get (){
+ cd $TMP
+ echo -e "\n\n$GIT\n-> $DIR"
+ [ -d "$TMP/$DIR" ] && cd $DIR && git fetch origin && rm -rf * && git reset --hard origin/master
+ [ ! -d "$TMP/$DIR" ] && git clone $GIT $DIR && cd $DIR
+
+ # https://github.com/SourMesen/Mesen/blob/master/COMPILING.md
+ # To compile the libretro core you will need a recent version of clang/gcc.
+ # This is because Mesen requires a C++14 compiler, along with support for the filesystem API (C++17).
+ # https://github.com/SourMesen/Mesen/commits/master?before=e31e500b0371457cf91bf25ef8059cfa177b1e8a+490
+ if [ $(cat /etc/slackware-version |cut -f2 -d' ' |cut -f1 -d.) -eq 14 ]; then
+  [ $LIBNAM = libretro-mesen ] && rm -rf * && git reset --hard 1a7f07cff5
+ fi
+
+ #GITVER="$(git describe --tags | sed -e 's/^v//' | sed -r 's/-.+//')"
+ GITVER="$(git describe --tags `git rev-list --tags --max-count=1`)"
+ GITREV=".$(git describe --tags | sed -e "s/^.*-\([0-9]\+\)-.*$/\1/")"
+ GITNUM="$(git rev-list --count HEAD)"
+ GITDAT="$(git log -n1 --date=short --pretty=format:'%ad' | sort -r | sed 's/-//g')"
+ GITCOM="$(git rev-parse --short HEAD)"
+
+ # --always
+ # fatal: Нет меток, которые могут описать
+ [ ${GITREV} = "." ] && GITREV=""
+ [ -z ${GITVER} ] && GITVER=`git tag -l | tail -n1`
+
+ test $(id -u) -eq 0 && chown -R root:root .
+ find -L . \
+ \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+  -o -perm 511 \) -exec chmod 755 {} \; -o \
+ \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+}
+
+
+git_libver (){
+ #
+ # snes9x
+ if [ -f snes9x.h ]; then
+  LIBVER=$(cat snes9x.h | grep "define VERSION" |awk '{print $3}' |sed -e 's/"//g')
+
+ #
+ # snes9x2005_catsfc
+ elif [ -f libretro.c ]; then libretro_c="libretro.c"
+  LIBVER=$(cat $libretro_c |grep library_version |sed -n 's/.*= "v//p' |sed -r 's/" GIT.+//')
+
+ # genesisplusgx
+ elif [ -f libretro/libretro.c ]; then libretro_c="libretro/libretro.c"
+  LIBVER=$(cat $libretro_c |grep library_version |sed -n 's/.*= "v//p' |sed -r 's/" GIT.+//')
+
+ # pcsx-rearmed
+ elif [ -f frontend/libretro.c ]; then libretro_c="frontend/libretro.c"
+  LIBVER=$(cat $libretro_c |grep library_version |sed -n 's/.*= "//p' |sed -r 's/" GIT.+//')
+
+ #
+ # beetle_mednafen-psx
+ elif [ -f libretro_options.h ]; then libretro_c="libretro_options.h"
+  LIBVER=$(cat $libretro_c |grep CORE_VERSION |sed -e 's/"//g' |sed -n 's/.*CORE_VERSION //p')
+
+ # Mesen
+ elif [ -f Docs/config.toml ]; then
+  LIBVER=$(cat Docs/config.toml | grep mesenVersion |sed -e 's|.*"\([^"]*\)".*|\1|')
+
+ # Gearsystem
+ elif [ -f src/definitions.h ]; then
+  LIBVER=$(cat src/definitions.h |grep GEAR |grep _VERSION |sed -e 's|.*"\([^"]*\)".*|\1|')
+
+ # picodrive > #define VERSION "1.92": 1.92'$'\r'': 1.92
+ elif [ -f platform/common/version.h ]; then 
+  LIBVER=$(cat platform/common/version.h |grep VERSION |sed -e 's|.*"\([^"]*\)".*|\1|')
+
+ # QuickNES_Core
+ elif [ ! -z "$(cat libretro/libretro.cpp |grep CORE_VERSION )" ]; then
+  LIBVER=$(cat libretro/libretro.cpp |grep CORE_VERSION |head -n1 |awk '{print $3}'|sed -e 's/"//g' -e 's/-//g')
+
+ # libretro-fceumm
+ elif [ -f changelog.txt ]; then
+  LIBVER=$(head changelog.txt -n1 |sed 's/://')
+
+ # nestopia
+ elif [ -f libretro/libretro.cpp ]; then
+  LIBVER=$(cat libretro/libretro.cpp |grep "#define NST_VERSION" |awk '{print $3}' |sed -e 's/"//g' -e 's/-//g')
+
+ # ppsspp
+ else
+  LIBVER=$(cat README.md |grep "What's new in" |head -n1 |awk '{print $4}')
+ fi
+
+ if [ -z $LIBVER ]; then
+  echo -e "\n> LIBVER is not detected!"
+  exit 1
+ fi
+}
+
+
+# VERSION based on libretro-fork
+# https://github.com/libretro
+DIR="${PRGNAM}_libretro.git" git_get
+git_libver
+
+
+# LIBVER + GITREV -> VERSION
+#if [ $LIBNAM != libretro-fceumm ]; then
+ VERSION_libretro=${LIBVER}${GITREV}_git${GITDAT}.${GITCOM}
+ VERSION="${VERSION_libretro/_git/_${GITNUM}_git}"
+
+# SBo's version style and ==name
+#else
+# SBoDAT="$(git log -n1 --date=short --pretty=format:'%ad'| sort -r | sed 's/-/./g')"
+# VERSION="${SBoDAT}_${GITCOM}_v${LIBVER}"
+#fi
+
+
+if [ -f /var/log/packages/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG ]; then
+ echo -e "\n\nNot found newest;"
+ echo -e "$PRGNAM-$VERSION-$ARCH-$BUILD$TAG - this version already installed\n\n"
+ rm -rfv $PKG ; [[ $TMP = /tmp/SBo/$PRGNAM ]] && rm -rf $TMP ; exit 0
+else
+ echo -e "\n\n\n"; PKGLOG="/var/log/packages/$PRGNAM-*"
+ [ -f $PKGLOG ] && echo -e "-`ls $PKGLOG | sed "s|/var/log/packages/$PRGNAM-||;s|-$ARCH-|_|"`"
+ echo -e "+${VERSION}_$BUILD$TAG\n\n\n"
+fi
+
+
+# https://github.com/libretro/libretro-super/blob/master/dist/info/
+mkdir -p $PKG/usr/lib${LIBDIRSUFFIX}/libretro/info/
+
+if [ ! -f $TMP/${LIBNAM_}.info ]; then
+ WWWGIT="https://raw.githubusercontent.com/libretro/libretro-super"
+ wget -c $WWWGIT/master/dist/info/${LIBNAM_}.info -P $TMP
+fi
+
+LIBNAM__=""
+git_info (){
+#
+# < display_name = "Nintendo - SNES / Famicom (Snes9x 2005)"
+# < display_version = "v1.36"
+#
+# > display_name = "_g snes9x2005 20190914.libretro"
+# > display_version = "v1.36 | 655.20190914"
+#
+ sed $TMP/${LIBNAM_}.info \
+ -e '/^display_name/s|= ".*|= "_'${LIBNAM/libretro-/}' '${GITDAT_}'"|' \
+ -e '/^display_version /s|"$| \| '${GITNUM}'.'${GITDAT}'"|' \
+ > $PKG/usr/lib${LIBDIRSUFFIX}/libretro/info/${LIBNAM__}.info
+ cd $PKG/usr/lib${LIBDIRSUFFIX}/libretro
+  mv -v info/${LIBNAM__}.info ./
+  ln -s ../${LIBNAM__}.info info/${LIBNAM__}.info
+ cd -
+}
+LIBNAM__="_${PRGNAM/libretro-/}-libretro" GITDAT_="${GITDAT/20/}.libretro" git_info
+
+
+D="VERSION version* WhatsNew* ?hats?ew* "
+D+="AUTHORS ?uthors COPYING* ?opying* copyright CHANGE* ?hange?og* COMPILING* CONTRIBUT* "
+D+="CREDIT* Credit* DEPENDENCIES FAQ faq* gpl* lgpl* HACKING HISTORY* INSTALL KDE4FAQ "
+D+="LICENSE* *license* MAINTAINERS NEWS *Preview* *preview* PORT* PKG-INFO README* "
+D+="ReadMe* readme* Resources* THANKS* Thanks* TODO* ToDo* *todo* TRANSLATORS "
+D+="*.rules debian/changelog debian/control debian/copyright "
+git_doc (){
+ mkdir -p $PKG/usr/doc/$PRGNAM-$VERSION/${GIT_DOCDIR}
+ [[ ! -z "`ls *.md`" ]] && md="`ls *.md`" && cp -v $md $PKG/usr/doc/$PRGNAM-$VERSION/${GIT_DOCDIR}
+ DOCS=""; for d in ${D}; do [ ! -z "`ls $d`" ] && DOCS+="$d "; done
+ [[ ! -z $DOCS ]] && cp -v $DOCS $PKG/usr/doc/$PRGNAM-$VERSION/${GIT_DOCDIR} #|| exit 1
+}
+GIT_DOCDIR="" git_doc
+
+
+git_make_so (){
+ x=$(cat /proc/cpuinfo | grep processor | wc -l)
+ [ -n "$x" ] && let "NUMJOBS=x+1" || NUMJOBS=2
+ 
+ if [ -f ?ibretro/Makefile ]; then
+  LFILE="-C ?ibretro"
+ elif [ -f platforms/libretro/Makefile ]; then
+  LFILE="-C platforms/libretro"
+ elif [ -f "Makefile.libretro" ]; then
+  LFILE="-f Makefile.libretro"
+ else
+  LFILE=""
+ fi 
+
+ if [ $PRGNAM = libretro-beetle-psx ]; then
+  LFILE+=" OPENGL=1 VULKAN=1 "
+  cp -v mednafen/psx/notes/{NOTES,PSX-TODO,SOURCES,SPU-IRQ} \
+	$PKG/usr/doc/$PRGNAM-$VERSION/ || exit 1
+ fi
+ 
+ echo -e "\n\n\n\n\n> `pwd`"
+ echo -e "> CFLAGS=\"$SLKCFLAGS\" CXXFLAGS=\"$SLKCFLAGS\" make -j${NUMJOBS} ${LFILE} DEBUG=0"
+ echo -e "> install -Dm0644 ${LIBNAM_}.so _PKG_/usr/lib${LIBDIRSUFFIX}/libretro/${SO}.so"
+ echo -e "\n\n"
+ CFLAGS="$SLKCFLAGS" CXXFLAGS="$SLKCFLAGS" make -j${NUMJOBS} ${LFILE} DEBUG=0
+
+ [ -f ?ibretro/${LIBNAM_}.so ] && cd ?ibretro/
+ [ -f platforms/libretro/${LIBNAM_}.so ] && cd platforms/libretro/
+ install -Dm0644 ${LIBNAM_}.so $PKG/usr/lib${LIBDIRSUFFIX}/libretro/${SO}.so
+}
+
+
+# != snes9x2005 != mednafen_psx 
+if [ ! -z $SRCGIT ]; then
+ DIR=${PRGNAM}.git GIT=$SRCGIT git_get
+ LIBNAM__="_${PRGNAM/libretro-/}" GITDAT_="${GITDAT/20/}" git_info
+
+ if [ $LIBNAM = libretro-quicknes ]; then
+  #cat libretro-quicknes.git/libretro/libretro.cpp | grep "library_version" | awk '{print $3}'
+  VERSION_=1_${GITNUM}_git${GITDAT}.${GITCOM}
+  wget -P $PKG/usr/doc/$PRGNAM-$VERSION/ \
+  -c https://raw.githubusercontent.com/kode54/QuickNES/master/README.TXT
+ else
+  [ -z ${GITVER} ] && git_libver \
+  && VERSION_="${LIBVER}_${GITNUM}_git${GITDAT}.${GITCOM}" \
+  || VERSION_="${GITVER}${GITREV}_${GITNUM}_git${GITDAT}.${GITCOM}"
+  GIT_DOCDIR="${VERSION_}" git_doc
+ fi
+
+ cd $TMP/${PRGNAM}.git
+ SO="_${PRGNAM/libretro-/}" git_make_so
+fi
+
+
+# Libretro
+cd $TMP/${PRGNAM}_libretro.git
+SO="_${PRGNAM/libretro-/}-libretro" git_make_so
+
+
+# Libretro_only
+if [ ! -f $PKG/usr/lib${LIBDIRSUFFIX}/libretro/_${PRGNAM/libretro-/}.so ]; then
+ cd $PKG/usr/lib${LIBDIRSUFFIX}/libretro/
+  mv -v _${PRGNAM/libretro-/}-libretro.so   __${PRGNAM/libretro-/}-libretro.so
+  mv -v _${PRGNAM/libretro-/}-libretro.info __${PRGNAM/libretro-/}-libretro.info
+  ln -svf ../_${LIBNAM__}.info info/_${LIBNAM__}.info
+  sed -i __${PRGNAM/libretro-/}-libretro.info \
+  -e '/^display_name/s|= ".*|= "__'${LIBNAM/libretro-/}' '${GITDAT_}'"|'
+ cd -
+fi
+
+
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+
+cat $CWD/libretro-cores.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/libretro-cores.SlackBuild
+cat $TMP/${LIBNAM_}.info > $PKG/usr/doc/$PRGNAM-$VERSION/${LIBNAM_}.info
+find $PKG/usr/doc/$PRGNAM-$VERSION/ -type f -exec chmod 644 {} \;
+find $PKG/usr/doc/$PRGNAM-$VERSION/ -type d -exec chmod 755 {} \;
+
+
+# install/slack-desc
+mkdir -p $PKG/install
+cat $TMP/slack-desc > $PKG/install/slack-desc
+sed -i $PKG/install/slack-desc -e '1d' -e 's/appname:/'${PRGNAM}':/' \
+-e 's/Libretro:VERSION_libretro/Libretro: '${VERSION}'/'
+
+# install/slack-desc
+# -e 's/Official:VERSION_/Official: '${VERSION_}'/' \
+if [ ! -z $SRCGIT ]; then
+ sed -i $PKG/install/slack-desc -e 's/Git-version_/Git-version Official: '${VERSION_}'/'
+else
+ sed -i $PKG/install/slack-desc -e 's/Git-version_/Git-version/'
+fi
+
+
+# Build and install package // PKGTYPE=${PKGTYPE:-txz}
+# PACKAGE="$OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-txz}"
+OUTPUT=${OUTPUT:-$CWD} ; [ $OUTPUT != $CWD ] && mkdir -pv $OUTPUT
+PACKAGE="$OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-txz}"
+[ -f $PACKAGE ] && rm -vf $PACKAGE
+
+ROOTCOMMAND1="cd $PKG ; /sbin/makepkg -l y -c n $PACKAGE"
+ROOTCOMMAND2="cd $CWD ; /sbin/upgradepkg --install-new --reinstall $PACKAGE"
+ROOTCOMMAND3="rm -rf $PKG"
+ROOTCOMMAND4="[ "$TMP" != "/tmp" ] && rm -rf $TMP"
+
+ROOTCOMMANDS="$ROOTCOMMAND1 && $ROOTCOMMAND2 && $ROOTCOMMAND3 " #&& $ROOTCOMMAND4"
+ROOTCOMMANDSU="cd $PKG ; chown -R root:root . && $ROOTCOMMANDS"
+
+if [ "${UID}" == "0" ]; then
+ /bin/su -c "$ROOTCOMMANDS"
+else
+ for i in {16..21} {21..16} ; do echo -en "\e[38;5;${i}m#\e[0m" ; done ; echo
+ echo -e "\n\n\n\e[1mPlease enter your admin password for makepkg and installpkg\e[0m"
+#sudo su -c "$ROOTCOMMANDSU" || /bin/su -c "$ROOTCOMMANDSU"
+ su_sudo (){ echo -e "\n1) Enter passw for sudo (sudo su -c)"; sudo su -c "$ROOTCOMMANDSU" ; }
+ su_root (){ echo -e "\n2) Enter root's passw 	(/bin/su -c)"; /bin/su -c "$ROOTCOMMANDSU" ; }
+ su_sudo || su_root
+fi

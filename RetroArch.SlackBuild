@@ -1,0 +1,385 @@
+#!/bin/sh
+
+# Slackware build script for libretro-RetroArch: Frontend for libretro
+
+# Copyright 2019 NK
+# All rights reserved.
+#
+# Redistribution and use of this script, with or without modification, is
+# permitted provided that the following conditions are met:
+#
+# 1. Redistributions of this script must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR ''AS IS'' AND ANY EXPRESS OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+# EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+# Thanks Slackware SBo
+#  https://slackbuilds.org/repository/14.2/games/RetroArch/
+#  https://git.slackbuilds.org/slackbuilds/log/games/RetroArch?h=14.2
+#
+# and Arch Linux / AUR Team
+#  https://www.archlinux.org/packages/?q=libretro
+#  https://aur.archlinux.org/packages/?K=libretro
+
+
+PRGNAM=RetroArch
+#VERSION=${VERSION:-1.7.7}
+BUILD=${BUILD:-1}
+TAG=${TAG:-nk}
+
+
+if [ -z "$ARCH" ]; then
+ case "$( uname -m )" in
+   i686) ARCH=i686 ;;
+   i486) ARCH=i486 ;;
+   i?86) ARCH=i586 ;;
+   arm*) ARCH=arm  ;;
+      *) ARCH=$( uname -m ) ;;
+ esac
+fi
+
+SLKLDFLAGS="" ; SLKCFLAGS="-O2" ; LIBDIRSUFFIX=""
+if [ "$ARCH" = "x86_64" ]; then
+  SLKCFLAGS+=" -fPIC" ; LIBDIRSUFFIX="64"
+elif [ "$ARCH" = "i?86" ]; then
+  SLKCFLAGS+=" -march=${ARCH} -mtune=i686"
+fi
+
+
+[ -f "`pwd`/$PRGNAM.SlackBuild" ] && CWD=$(pwd) || CWD=`dirname $0`
+TMP=${TMP:-/tmp/SBo/$PRGNAM}
+PKG=$TMP/_package-$PRGNAM
+rm -rf $PKG || sudo su -c "rm -rf $PKG" || /bin/su -c "rm -rf $PKG"
+mkdir -p $PKG 
+set -e
+cd $TMP
+
+
+if [ -z $VERSION ]; then
+# VERSION based on lp/ppa from Ubuntu devel by Libretro Stable
+WWWPPA="http://ppa.launchpad.net/libretro/stable/ubuntu/dists/devel/main/source/"
+VERPPA=$( wget -qO- $WWWPPA/Sources.gz | gzip -d \
+| grep -A2 -x "Package: retroarch"| grep "Version: " \
+| sed 's/Version: //'| sed -r 's/-.+//' \
+); VERSION="${VERPPA}"
+fi
+
+#if [ -f /var/log/packages/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG ]; then
+if [ -f /var/log/packages/$PRGNAM-${VERSION}* ]; then
+ echo -e "\n\nNot found newest;"
+ echo -e "${PRGNAM}_${VERSION} - this version already installed\n\n"
+ #rm -rfv $PKG ; [[ $TMP = /tmp/SBo/$PRGNAM ]] && rm -rf $TMP ; exit 1
+else
+ echo -e "\n\n\n"; PKGLOG="/var/log/packages/$PRGNAM-*"
+ [ -f $PKGLOG ] && echo -e "-`ls $PKGLOG | sed "s|/var/log/packages/$PRGNAM-||;s|-$ARCH-|_|"`"
+ echo -e "+${VERSION}_$BUILD$TAG\n\n\n"
+fi
+
+
+# src_RA
+SRCWWW="https://github.com/libretro/RetroArch/archive"
+SRCTAR="v$VERSION.tar.gz"
+SRCDIR=$PRGNAM-$VERSION
+[ -f $SRCTAR ] || wget --no-check-certificate --user-agent='WGET' -c $SRCWWW/$SRCTAR
+rm -rf $SRCDIR
+tar xf $SRCTAR
+cd $SRCDIR
+
+# src_RA_assets
+# Assets needed for RetroArch - e.g. menu drivers, etc. Also contains the official branding.
+if [ ! -d media/assets ]; then
+ SRCRAA="retroarch-assets"
+ WWWARCH="https://git.archlinux.org/svntogit/community.git/plain/trunk/PKGBUILD?h=packages"
+ if [ ! -f $TMP/$SRCRAA.zip ]; then
+  VERARCH="`wget -qO- $WWWARCH/$SRCRAA |grep source= |sed -r 's/.+commit=//' |sed -e 's/)//'`"
+  WWWRAA="https://github.com/libretro/retroarch-assets/archive"
+  wget --no-check-certificate --user-agent='WGET' -c $WWWRAA/$VERARCH.zip -P $TMP
+  mv -v $TMP/${VERARCH}.zip $TMP/$SRCRAA.zip
+ fi
+ unzip $TMP/$SRCRAA.zip -d media/
+ mv media/retroarch-assets-* media/assets
+ PKGARCH="`wget -qO- $WWWARCH/$SRCRAA |grep pkgver= |sed 's/pkgver=//'`"
+ VERSION+=".$PKGARCH"
+fi
+
+
+# src_SLACK_SBo
+WWWSBO="https://slackbuilds.org/slackbuilds/14.2/games/RetroArch"
+for sbo_file in slack-desc doinst.sh ; do
+ [ ! -f $TMP/${sbo_file} ] && wget -c $WWWSBO/${sbo_file} -P $TMP
+ install -Dm644 $TMP/${sbo_file} $PKG/install/${sbo_file}
+done
+for sbo_file in README README.SLACKWARE ; do
+ [ ! -f $TMP/${sbo_file} ] && wget -c $WWWSBO/${sbo_file} -P $TMP
+ install -Dm644 $TMP/${sbo_file} $PKG/usr/doc/$PRGNAM-$VERSION/_SBo-${sbo_file}
+done
+
+
+test $(id -u) -eq 0 && chown -R root:root .
+
+find -L . \
+ \( -perm 777 -o -perm 775 -o -perm 750 -o -perm 711 -o -perm 555 \
+  -o -perm 511 \) -exec chmod 755 {} \; -o \
+ \( -perm 666 -o -perm 664 -o -perm 640 -o -perm 600 -o -perm 444 \
+  -o -perm 440 -o -perm 400 \) -exec chmod 644 {} \;
+
+
+# retroarch.cfg
+# Set the default directories to be consistent with the installation.
+
+retroarch_dir="/usr/lib${LIBDIRSUFFIX}/retroarch"; sed -i retroarch.cfg \
+-e "s|# audio_filter_dir =|audio_filter_dir = ${retroarch_dir}/filters/audio|" \
+-e "s|# video_filter_dir =|video_filter_dir = ${retroarch_dir}/filters/video|" \
+
+libretro_dir="/usr/lib${LIBDIRSUFFIX}/libretro"; sed -i retroarch.cfg \
+-e "s|# libretro_directory =|libretro_directory = ${libretro_dir}|" \
+-e "s|# libretro_info_path =|libretro_info_path = ${libretro_dir}/info|" \
+-e "s|# menu_show_core_updater = true|menu_show_core_updater = false|" \
+
+
+# Fix qt5 support with 14.2.
+sed -i 's/-fPIC/-fPIC -std=c++11/' qb/qb.moc.sh || exit 1
+
+
+SLACK_C="\
+--disable-sixel \
+--disable-ssa \
+--disable-mpv \
+--disable-vg \
+--disable-d3d8 --disable-d3d9 --disable-d3dx \
+--disable-miniupnpc --disable-builtinminiupnpc \
+--disable-audioio \
+--disable-neon \
+--disable-videocore \
+--disable-drmingw \
+--disable-vulkan \
+"
+SLACK_M="\
+--disable-stripes \
+--disable-omap \
+--disable-dispmanx \
+--disable-opengl1 \
+--disable-vivante_fbdev \
+--disable-coreaudio \
+--disable-floathard --disable-floatsoftfp \
+--disable-sunxi --disable-cg --disable-hlsl \
+"
+
+#[WARN] Failed to bind API (#1, version 0.0) on context driver "mali-fbdev".
+#[WARN] Failed to bind API (#1, version 0.0) on context driver "opendingux-fbdev".
+SLACK_S="--disable-mali_fbdev --disable-opendingux_fbdev "
+
+# Build since 1.7.7 ( -> 1.8.1 )
+if [ -z "$(echo $VERSION | grep '1.7.')" ]; then
+ SLACK_M+="\
+--enable-builtinzlib \
+"
+ SLACK_C+="\
+--disable-dsound \
+--disable-wasapi \
+--disable-xaudio \
+--disable-dinput \
+--disable-winmm \
+--disable-metal \
+\
+--enable-cc_resampler \
+--enable-video_layout \
+--enable-rpiled \
+--enable-dr_mp3 \
+--enable-translate \
+--enable-audiomixer \
+--enable-cdrom \
+--enable-glsl \
+--enable-slang \
+--enable-glslang \
+--enable-spirv_cross \
+--enable-network_video \
+"; fi
+
+# SLACK_Qt="--disable-qt --host=$ARCH-slackware-linux --enable-exynos --enable-rsound --enable-roar \"
+SLACK_Qt="--enable-qt --disable-exynos --disable-rsound --disable-roar"
+
+LDFLAGS="$SLKLDFLAGS" \
+CFLAGS="$SLKCFLAGS" \
+CXXFLAGS="$SLKCFLAGS" \
+./configure \
+ --prefix=/usr \
+ --sysconfdir=/etc \
+ --mandir=/usr/man \
+ --docdir=/usr/doc/$PRGNAM-$VERSION \
+ --disable-debug --disable-systemd --disable-wayland --build=$ARCH-slackware-linux \
+\
+--bindir=/usr/games \
+--with-assets_dir=/usr/share/games --disable-update_assets \
+\
+${SLACK_Qt} \
+${SLACK_C} \
+${SLACK_M} \
+${SLACK_S} \
+\
+--enable-caca \
+--enable-libretrodb \
+--enable-menu \
+--enable-menu_widgets \
+--enable-rgui \
+--enable-materialui \
+--enable-xmb \
+--enable-ozone \
+--enable-runahead \
+--enable-ssl \
+--enable-builtinmbedtls \
+--enable-overlay \
+--enable-dynamic \
+--enable-libusb \
+--enable-dbus \
+--enable-udev \
+--enable-threads \
+--enable-thread_storage \
+--enable-ffmpeg \
+--enable-dylib \
+--enable-networking \
+--enable-networkgamepad \
+--enable-netplaydiscovery \
+--enable-opengl \
+--enable-opengl_core \
+--enable-x11 \
+--enable-xrandr \
+--enable-xinerama \
+--enable-plain_drm \
+--enable-zlib \
+--enable-alsa \
+--enable-tinyalsa \
+--enable-oss \
+--enable-al \
+--enable-pulse \
+--enable-freetype \
+--enable-stb_font \
+--enable-stb_image \
+--enable-stb_vorbis \
+--enable-ibxm \
+--enable-xvideo \
+--enable-v4l2 \
+--enable-sse \
+--enable-chd \
+--enable-7zip \
+--enable-flac \
+--enable-builtinflac \
+--enable-preserve_dylib \
+--enable-parport  \
+--enable-imageviewer \
+--enable-mmap \
+--enable-xshm \
+--enable-discord \
+--enable-shaderpipeline \
+--enable-vulkan_display \
+--enable-rpng \
+--enable-rbmp \
+--enable-rjpeg \
+--enable-rtga \
+--enable-hid \
+--enable-langextra \
+--enable-osmesa \
+--enable-videoprocessor \
+--enable-easteregg \
+--enable-sdl --enable-sdl2 \
+--enable-cheevos --enable-lua \
+--enable-egl --enable-kms \
+--disable-jack --disable-opengles --disable-opengles3 \
+|| exit 1
+
+
+make clean
+x=$(cat /proc/cpuinfo | grep processor | wc -l)
+[ -n "$x" ] && let "NUMJOBS=x+1" || NUMJOBS=2
+make -j${NUMJOBS} || exit 1
+make install DESTDIR=$PKG || exit 1
+
+make_filter (){
+ CFLAGS="$SLKCFLAGS" CXXFLAGS="$SLKCFLAGS" make -j${NUMJOBS} -C $FDIR build=release
+ install -Dm 644 $FDIR/*.{$FFILE,so} -t $PKG/usr/lib${LIBDIRSUFFIX}/retroarch/filters/$f/
+}
+f=video FFILE="filt" FDIR="gfx/video_filters" make_filter
+f=audio FFILE="dsp"  FDIR="libretro-common/audio/dsp_filters" make_filter
+
+find $PKG -print0 | xargs -0 file | grep -e "executable" -e "shared object" | grep ELF \
+  | cut -f 1 -d : | xargs strip --strip-unneeded 2> /dev/null || true
+
+
+# ~/.config/retroarch/retroarch.cfg
+mv $PKG/etc/retroarch.cfg $PKG/etc/retroarch.cfg.new
+
+# Compress the man page(s):
+find $PKG/usr/man -type f -exec gzip -9 {} \;
+for i in $( find $PKG/usr/man -type l );
+do ln -s $( readlink $i ).gz $i.gz ; rm $i ; done
+
+# Add a documentation directory:
+mkdir -pv $PKG/usr/doc/$PRGNAM-$VERSION ; D=""
+[[ ! -z "`ls *.md`" ]] && md="`ls *.md`" && mv -v $md $PKG/usr/doc/$PRGNAM-$VERSION/
+D+="AUTHORS COPYING* copying* copyright CHANGE* ?hange?og* CONTRIBUT* CREDIT* Credit* "
+D+="DEPENDENCIES FAQ faq* gpl* lgpl* HACKING HISTORY* INSTALL KDE4FAQ LICENSE* *license* "
+D+="MAINTAINERS NEWS *Preview* *preview* PORT* PKG-INFO README* ReadMe* readme* Resources* "
+D+="THANKS* Thanks* TODO* ToDo* todo* TRANSLATORS VERSION WhatsNew* "
+D+="*.rules debian/changelog debian/control debian/copyright "
+DOCS=""; for d in ${D}; do [ ! -z "`ls $d`" ] && DOCS+="$d "; done
+[[ ! -z $DOCS ]] && mv -v $DOCS $PKG/usr/doc/$PRGNAM-$VERSION/ || exit 1
+###
+##
+cat << EOF > $PKG/usr/doc/$PRGNAM-$VERSION/README.assets
+Assets needed for RetroArch - e.g. menu drivers, etc.
+Also contains the official branding.
+https://github.com/libretro/retroarch-assets
+EOF
+##
+##
+echo -e "Available features compiled into program" \
+> $PKG/usr/doc/$PRGNAM-$VERSION/_FEATURES
+for o in version features ; do
+ $PKG/usr/games/retroarch --${o} | sed -e '2d;4d' \
+ &>> $PKG/usr/doc/$PRGNAM-$VERSION/_FEATURES || exit 1
+done
+##
+###
+cat $CWD/$PRGNAM.SlackBuild > $PKG/usr/doc/$PRGNAM-$VERSION/$PRGNAM.SlackBuild
+find $PKG/usr/doc/$PRGNAM-$VERSION/ -type f -exec chmod 644 {} \;
+find $PKG/usr/doc/$PRGNAM-$VERSION/ -type d -exec chmod 755 {} \;
+#exit 1
+
+#cd $PKG
+#/sbin/makepkg -l y -c n $OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-tgz}
+
+
+# Build and install package // PKGTYPE=${PKGTYPE:-txz}
+# PACKAGE="$OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-txz}"
+OUTPUT=${OUTPUT:-$CWD} ; [ $OUTPUT != $CWD ] && mkdir -pv $OUTPUT
+PACKAGE="$OUTPUT/$PRGNAM-$VERSION-$ARCH-$BUILD$TAG.${PKGTYPE:-txz}"
+[ -f $PACKAGE ] && rm -vf $PACKAGE
+
+ROOTCOMMAND1="cd $PKG ; /sbin/makepkg -l y -c n $PACKAGE"
+ROOTCOMMAND2="cd $CWD ; /sbin/upgradepkg --install-new --reinstall $PACKAGE"
+ROOTCOMMAND3="rm -rf $PKG"
+ROOTCOMMAND4="[ "$TMP" != "/tmp" ] && rm -rf $TMP"
+
+ROOTCOMMANDS="$ROOTCOMMAND1 && $ROOTCOMMAND2 && $ROOTCOMMAND3" #&& $ROOTCOMMAND4"
+ROOTCOMMANDSU="cd $PKG ; chown -R root:root . && $ROOTCOMMANDS"
+
+if [ "${UID}" == "0" ]; then
+ /bin/su -c "$ROOTCOMMANDS"
+else
+ for i in {16..21} {21..16} ; do echo -en "\e[38;5;${i}m#\e[0m" ; done ; echo
+ echo -e "\n\n\n\e[1mPlease enter your admin password for makepkg and installpkg\e[0m"
+#sudo su -c "$ROOTCOMMANDSU" || /bin/su -c "$ROOTCOMMANDSU"
+ su_sudo (){ echo -e "\n1) Enter passw for sudo (sudo su -c)"; sudo su -c "$ROOTCOMMANDSU" ; }
+ su_root (){ echo -e "\n2) Enter root's passw 	(/bin/su -c)"; /bin/su -c "$ROOTCOMMANDSU" ; }
+ su_sudo || su_root
+fi
